@@ -1,0 +1,235 @@
+#%RAML 1.0
+title: s-nd-databaseAccess-openbanking
+
+protocols: [HTTP]
+
+uses:
+  request: /exchange_modules/81a47cd9-f628-4474-99b6-f13cb4152cbe/collection2/1.0.1/collection2.raml
+types:
+  store: !include /datatype/Store_dataType.raml
+  barcode: !include /datatype/Barcode_dataType.raml
+  fidelity: !include /datatype/Fidelity_dataType.raml
+  item: !include /datatype/Item_dataType.raml
+  order: !include /datatype/Order_dataType.raml
+  orderedProduct: !include /datatype/OrderedProduct_dataType.raml
+  product: !include /datatype/Product_dataType.raml
+  promo: !include /datatype/Promo_dataType.raml
+  user: !include /datatype/User_dataType.raml
+  bank: !include /datatype/Bank_dataType.raml
+  QRcodeStore: !include /datatype/QRcodeStore_dataType.raml
+
+securitySchemes:
+  securityBasicScheme: !include /exchange_modules/81a47cd9-f628-4474-99b6-f13cb4152cbe/securityfragment/1.0.0/securityfragment.raml
+
+securedBy:
+  - securityBasicScheme
+
+traits:
+  errorResponse: !include /exchange_modules/81a47cd9-f628-4474-99b6-f13cb4152cbe/errortrait/1.0.1/errortrait.raml
+
+/test:
+  type:
+    request.read-only:
+      exampleRead: {"message":"API OK"}
+
+/banks/{bank_id}:
+  type:
+    request.read-only:
+      exampleRead: !include /examples/Bank_example.raml
+
+/cashbacks/{bank_id}:
+  type:
+    request.read-only-with-query:
+      exampleRead: !include /examples/Bank_example.raml
+      queryName: storeBrand
+
+/stores/{store_id}:
+    type:
+      request.read-only:
+        exampleRead: !include /examples/Store_example.raml
+
+/stores_barcode/{qr_code_store}:
+    type:
+      request.read-only:
+        exampleRead: !include /examples/Store_example.raml
+
+/barcodes/{barcode_id}:
+  type:
+    request.read-only:
+      exampleRead: !include /examples/Barcode_example.raml
+
+/products:
+  /{product_id}:
+    type:
+      request.read-only:
+        exampleRead: !include /examples/Product_example.raml
+
+/products_with_barcode:
+  /{barcode_id}:
+    type:
+      request.read-only:
+        exampleRead: !include /examples/Product_example.raml
+
+
+/orderedProducts:
+  delete:
+    is: [errorResponse]
+    body: 
+      application/json:
+        example:
+          {
+            "IDorder" : 1,
+            "IDproduct" : 1
+          }
+    responses:
+        201:
+          body:
+            application/json:
+              example:
+                {"message" : Product deleted}
+  
+  /all:
+    /{order_id}:
+      type:
+        request.read-only:
+          exampleRead: !include /examples/OrderedProduct_example.raml
+
+  /{order_id}:
+    type:
+      request.read-only-with-query:
+        exampleRead: !include /examples/OrderedProduct_example.raml
+        queryName: product_id
+      
+
+  /new/{order_id}:
+    type:
+      request.post-only:
+        exampleBodyPost: !include /examples/OrderedProduct_example.raml
+        exampleReadPost: {"Message":"Product added to the order"}
+  
+  /plus:
+    put:
+      is: [errorResponse]
+      body:
+        application/json:
+          example: {
+            "IDorder" : 1,
+            "IDproduct" : 1,
+            "NumAdded" : 2,
+            "NewPrice" : 10.00
+          }
+      responses:
+        201:
+          body:
+            application/json:
+              example:
+                {"message" : Product updated}
+
+  /minus:
+    put:
+      is: [errorResponse]
+      body:
+        application/json:
+          example: {
+            "IDorder" : 1,
+            "IDproduct" : 1,
+            "NumCut" : 2,
+            "NewPrice" : 3.34
+          }
+      responses:
+        201:
+          body:
+            application/json:
+              example:
+                {"message" : Product updated}
+  /promo:
+    type:
+      request.put-only:
+        exampleBodyPut: {
+          "IDorder" : 1,
+          "IDproduct" : 1,
+          "NewPrice": 10,
+          "NewPromoPrice" : 8.90
+        }
+        exampleReadPut: {"Message" : "Price updated"}
+
+
+/promos/{product_id}:
+  type:
+    request.read-only-with-query:
+      queryName: store_id
+      exampleRead: !include /examples/Promo_example.raml
+
+
+/new_orders/{order_id}:
+  type:
+    request.post-only:
+      exampleBodyPost: {"IDorder":10, "OrderTotalPrice": 0, "OrderDate":"01/01/2020","OrderValidated": 0}
+      exampleReadPost: {"Message" : "New Order Created"}
+
+/orders/{order_id}:
+  type:
+    request.put_and_read:
+      exampleRead: !include /examples/Order_example.raml
+      exampleReadPut: {"Message" : "Price changed"}
+      exampleBodyPut: {"newPrice":10, "newPriceWithPromo" : 9}
+  
+  /validation:
+    type:
+      request.post-only:
+        exampleReadPost:  !include /examples/Order_example.raml
+        exampleBodyPost: {"IDorder" : "ZAXAZF"}
+
+  /dated:
+    type:
+      request.read-only:
+        exampleRead: !include /examples/Order_example.raml
+
+/clients:
+  type:
+    request.post-only:
+      exampleBodyPost: !include /examples/User_example.raml
+      exampleReadPost: !include /examples/User_example.raml
+  
+  /{client_id}:
+    type:
+      request.read-only:
+        exampleRead: !include /examples/User_example.raml
+  /connection/{username}:
+    type:
+      request.read-only:
+        exampleRead: {"Password" : "examplePwd"}
+  
+
+/fidelities/{client_id}:
+  type:
+    request.read-only:
+      exampleRead: !include /examples/Fidelity_example.raml
+
+/items/{product_id}:
+  type:
+    request.read-only-with-query:
+      queryName: store_id
+      exampleRead: !include /examples/Item_example.raml
+
+  /minus:
+    type:
+      request.put-only-with-query:
+        queryName: store_id
+        exampleBodyPut: {
+          "NumToCut" : 1
+        }
+        exampleReadPut: { "Message" : "Items removed"}
+  
+  /plus:
+    type:
+      request.put-only-with-query:
+        queryName: store_id
+        exampleBodyPut: {
+          "NumToCut" : 1
+        }
+        exampleReadPut: { "Message" : "Items restocked"}
+
+
+
+

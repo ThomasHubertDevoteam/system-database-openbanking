@@ -1,0 +1,184 @@
+#%RAML 1.0 Library
+
+traits:
+  errorResponse: !include /exchange_modules/81a47cd9-f628-4474-99b6-f13cb4152cbe/errortrait/1.0.1/errortrait.raml
+
+resourceTypes:
+  read-only: 
+    get:
+      is: [errorResponse]
+      responses:
+        200:
+          body:
+            application/json:
+              example: <<exampleRead>>
+
+  post-only:
+    post:
+      is: [errorResponse]
+      body:
+        application/json:
+          example: <<exampleBodyPost>>
+      responses:
+        201:
+          body:
+            application/json:
+              example: {"Message":"Added"}
+  
+  post-response:
+    post:
+      is: [errorResponse]
+      body:
+        application/json:
+          example:
+            <<exampleBodyPost>>
+      responses:
+        201:
+          body:
+            application/json:
+              example:
+                <<exampleMessageBody>>
+  
+  put-only:
+    put:
+      is: [errorResponse]
+      body:
+        application/json:
+          example: <<exampleBodyPut>>
+      responses:
+        201:
+          body:
+            application/json:
+              example: {"Message":"Updated"}
+
+  delete-only:
+    delete:
+      is: [errorResponse]
+      responses:
+        200:
+          body:
+            application/json:
+              examples:
+                message: {"Resource Deleted":<<exampleDeleted>>}
+            
+  create-and-read:
+    get:
+      is: [errorResponse]
+      responses:
+        200:
+          body:
+            application/json:
+              example: <<exampleRead>>
+    post:
+      is: [errorResponse]
+      body:
+        application/json:
+          example: <<exampleBodyPost>>
+      responses:
+        201:
+          body:
+            application/json:
+              example: {"Message":"Added"}
+
+  put_and_read:
+    get:
+      is: [errorResponse]
+      responses:
+        200:
+          body:
+            application/json:
+              example: <<exampleRead>>
+    put:
+      is: [errorResponse]
+      body:
+        application/json:
+          example: <<exampleBodyPut>>
+      responses:
+        201:
+          body:
+            application/json:
+              example: {"Message":"Updated"}
+
+  delete_and_read:
+    get:
+      is: [errorResponse]
+      responses:
+        200:
+          body:
+            application/json:
+              example: <<exampleRead>>
+    delete:
+      is: [errorResponse]
+      responses:
+        200:
+          body:
+            application/json:
+              examples:
+                message: {"Resource Deleted":<<exampleDeleted>>} 
+
+  del_crea_read:
+    get:
+      is: [errorResponse]
+      responses:
+        200:
+          body:
+            application/json:
+              example: <<exampleRead>>
+    post:
+      is: [errorResponse]
+      body:
+        application/json:
+          example: <<exampleBodyPost>>
+      responses:
+        201:
+          body:
+            application/json:
+              example: {"Message":"Added"}
+    delete:
+      is: [errorResponse]
+      responses:
+        200:
+          body:
+            application/json:
+              examples:
+                message: {"Resource Deleted":<<exampleDeleted>>}
+
+  crud:
+    get:
+      is: [errorResponse]
+      responses:
+        200:
+          body:
+            application/json:
+              example: <<exampleRead>>
+    post:
+      is: [errorResponse]
+      body:
+        application/json:
+          example: <<exampleBodyPost>>
+      responses:
+        201:
+          body:
+            application/json:
+              example: {"Message":"Added"}
+    put:
+      is: [errorResponse]
+      body:
+        application/json:
+          example: <<exampleBodyPut>>
+      responses:
+        201:
+          body:
+            application/json:
+              example: {"Message":"Updated"}
+    delete:
+      is: [errorResponse]
+      responses:
+        200:
+          body:
+            application/json:
+              examples:
+                message: {"Resource Deleted":<<exampleDeleted>>}
+  
+  
+  

@@ -1,0 +1,660 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd  http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+    <http:listener-config name="s-nd-databaseaccess-openbanking-httpListenerConfig">
+        <http:listener-connection host="0.0.0.0" port="8081" />
+    </http:listener-config>
+    <apikit:config name="s-nd-databaseaccess-openbanking-config" api="s-nd-databaseaccess-openbanking.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <db:config name="Database_Config_Store" doc:name="Database Config" doc:id="380a1e83-5aec-4ae3-90a8-c7a8608c26c8">
+        <db:my-sql-connection host="localhost" port="3306" user="root" password="helloworld" database="openbanking" />
+    </db:config>
+    <http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="e7e402a3-8353-4a76-a3ee-8752b6cd13a3">
+        <http:request-connection host="localhost" port="8082" />
+    </http:request-config>
+    <flow name="s-nd-databaseaccess-openbanking-main">
+        <http:listener config-ref="s-nd-databaseaccess-openbanking-httpListenerConfig" path="/api/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="s-nd-databaseaccess-openbanking-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:BAD_REQUEST">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Bad request"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Method not allowed"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">405</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not acceptable"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">406</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Unsupported media type"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">415</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not Implemented"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">501</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="s-nd-databaseaccess-openbanking-console">
+        <http:listener config-ref="s-nd-databaseaccess-openbanking-httpListenerConfig" path="/console/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:console config-ref="s-nd-databaseaccess-openbanking-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="put:\items\(product_id)\minus:application\json:s-nd-databaseaccess-openbanking-config">
+        <db:update doc:name="Copy_of_Update" doc:id="b856aa0d-aef4-416c-b697-dac5ab37799d" config-ref="Database_Config_Store">
+            <db:sql><![CDATA[UPDATE ITEM SET ItemQuantity = :NUM WHERE IDproduct = :ID AND IDstore = :STORE;]]></db:sql>
+            <db:input-parameters><![CDATA[#[{'ID':attributes.uriParams.product_id, 'NUM':payload.ItemQuantity, 'STORE':payload.IDstore}]]]></db:input-parameters>
+        </db:update>
+        <ee:transform doc:name="Copy_of_Transform Message" doc:id="42555cb9-eb15-4afa-b8ce-2a30a02f8909" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  Message: "Items destocked"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="put:\orderedProducts\minus:application\json:s-nd-databaseaccess-openbanking-config">
+        <set-variable value="#[payload.IDorder]" doc:name="IDorder" doc:id="6ffbd4f7-2a4d-44c7-b7ae-da1f6cb1c6af" variableName="IDorder" />
+        <set-variable value="#[payload.IDproduct]" doc:name="IDproduct" doc:id="281844a1-d7db-4548-a31c-0a90e9df955b" variableName="IDproduct" />
+        <set-variable value="#[payload.NumCut as Number]" doc:name="CutNum" doc:id="e7b7d322-8ffe-488e-bdf0-07d61fe39052" variableName="CutNum" />
+        <set-variable value="#[payload.NewPrice as Number]" doc:name="CutPrice" doc:id="4f2148b4-8630-41a1-82d7-a7fe8da031c2" variableName="CutPrice" />
+        <db:select doc:name="Select * FROM OrderedProduct" doc:id="aa57868d-fd41-4e2f-a68f-de0956e3565c" config-ref="Database_Config_Store">
+            <db:sql><![CDATA[SELECT * FROM ORDERED_PRODUCT WHERE IDproduct = :ID AND IDorder = :ORDER;]]></db:sql>
+            <db:input-parameters><![CDATA[#[{'ID' : payload.IDproduct, 'ORDER' : payload.IDorder}]]]></db:input-parameters>
+        </db:select>
+        <ee:transform doc:name="Transform Message" doc:id="a33640ee-2ca5-4038-9343-0e440441891d">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	IDproduct: payload.IDproduct default 0,
+	IDorder: payload.IDorder default 0,
+	NumProductOrdered: payload.NumProductOrdered default 0,
+	OrderedPrice: payload.OrderedPrice default 0,
+	PriceWithPromo: payload.PriceWithPromo default 0
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <set-variable value="#[payload.OrderedPrice[0] as Number]" doc:name="InitPrice" doc:id="790478dc-e03b-4c1b-bc24-026cfe68fd96" variableName="InitPrice" />
+        <set-variable value="#[payload.NumProductOrdered[0] as Number]" doc:name="InitNumber" doc:id="c6100828-4444-4bf8-8d46-29acaf1025e4" variableName="InitNumber" />
+        <set-variable value="#[(vars.InitPrice) - (vars.CutPrice)]" doc:name="NewPrice" doc:id="cd044a71-94c6-4e25-bbe4-4ede33ca363e" variableName="NewPrice" />
+        <set-variable value="#[(vars.InitNumber) - (vars.CutNum)]" doc:name="NewNumber" doc:id="e8cb0109-03ec-4669-b664-d2015de328f2" variableName="NewNumber" />
+        <db:update doc:name="Update Number" doc:id="b0639e01-ddb2-4185-8f71-238adc7b5250" config-ref="Database_Config_Store">
+            <db:sql><![CDATA[UPDATE ORDERED_PRODUCT SET NumProductOrdered = (:NUM) WHERE IDproduct = :ID AND IDorder = :ORDER;]]></db:sql>
+            <db:input-parameters><![CDATA[#[{'NUM' : vars.NewNumber, 'ID': vars.IDproduct , 'ORDER': vars.IDorder }]]]></db:input-parameters>
+        </db:update>
+        <db:update doc:name="Update Price" doc:id="5787137e-1ab8-467d-a3e4-1d2548b19966" config-ref="Database_Config_Store">
+            <db:sql><![CDATA[UPDATE ORDERED_PRODUCT SET OrderedPrice = (:PRICE), PriceWithPromo = (:PRICE) WHERE IDproduct = :ID AND IDorder = :ORDER;]]></db:sql>
+            <db:input-parameters><![CDATA[#[{'PRICE' : vars.NewPrice, 'ID': vars.IDproduct , 'ORDER': vars.IDorder }]]]></db:input-parameters>
+        </db:update>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  message: "Product updated"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="put:\orders\(order_id):application\json:s-nd-databaseaccess-openbanking-config">
+        <set-variable value="#[payload]" doc:name="totalPrice" doc:id="d0dd122e-c3f0-46e8-9a3f-c7cfff7ff32a" variableName="new_price" />
+        <db:update doc:name="Update" doc:id="0d679ccc-defa-484a-9eee-487fb3283ceb" config-ref="Database_Config_Store">
+            <db:sql><![CDATA[UPDATE ORDERS SET OrderTotalPriceWithPromo = :PROMO, OrderTotalPrice = :NUM WHERE IDorder = :ID;]]></db:sql>
+            <db:input-parameters><![CDATA[#[{'ID':attributes.uriParams.order_id, 'PROMO':vars.new_price.newPriceWithPrice, 'NUM':vars.new_price.newPrice}]]]></db:input-parameters>
+        </db:update>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  Message: "Price changed"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="put:\orderedProducts\plus:application\json:s-nd-databaseaccess-openbanking-config">
+        <set-variable value="#[payload.IDorder]" doc:name="IDorder" doc:id="f7b3786b-6654-49b8-a81b-f94d88588732" variableName="IDorder" />
+        <set-variable value="#[payload.IDproduct]" doc:name="IDproduct" doc:id="db3b4019-13a3-4b4c-ac55-87069aa20ad4" variableName="IDproduct" />
+        <set-variable value="#[payload.NumAdded as Number]" doc:name="AddNum" doc:id="f0ca58a7-3e74-4d28-8d33-740d8a458638" variableName="AddNum" />
+        <set-variable value="#[payload.NewPrice as Number]" doc:name="AddPrice" doc:id="88679372-9945-4ea4-b513-fa53683382b0" variableName="AddPrice" />
+        <db:select doc:name="Select * FROM OrderedProduct" doc:id="a7162762-cf9b-49ad-9833-0d0612e468ce" config-ref="Database_Config_Store">
+            <db:sql><![CDATA[SELECT * FROM ORDERED_PRODUCT WHERE IDproduct = :ID AND IDorder = :ORDER;]]></db:sql>
+            <db:input-parameters><![CDATA[#[{'ID' : payload.IDproduct, 'ORDER' : payload.IDorder}]]]></db:input-parameters>
+        </db:select>
+        <logger level="INFO" doc:name="Logger" doc:id="56c44181-8e59-477c-a652-ac742f9a4aee" message="#[payload]" />
+        <ee:transform doc:name="Transform Message" doc:id="060a7bf8-aa77-408d-86f5-9aff60fe63d1">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	IDproduct: payload.IDproduct default 0,
+	IDorder: payload.IDorder default 0,
+	NumProductOrdered: payload.NumProductOrdered default 0,
+	OrderedPrice: payload.OrderedPrice default 0,
+	PriceWithPromo: payload.PriceWithPromo default 0
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <set-variable value="#[payload.OrderedPrice[0] as Number]" doc:name="InitPrice" doc:id="857b1519-80c9-429a-b6ca-cf4ea45bd309" variableName="InitPrice" />
+        <set-variable value="#[payload.NumProductOrdered[0] as Number]" doc:name="InitNumber" doc:id="329136ca-678b-47d4-9375-7be6dcd4e847" variableName="InitNumber" />
+        <set-variable value="#[(vars.AddPrice) + (vars.InitPrice)]" doc:name="NewPrice" doc:id="70e563f3-5d1a-4c4c-b67d-136d579f4241" variableName="NewPrice" />
+        <set-variable value="#[(vars.InitNumber) + (vars.AddNum)]" doc:name="NewNumber" doc:id="5b5e661f-c180-44cf-906d-ff7a51715c9e" variableName="NewNumber" />
+        <db:update doc:name="Update Number" doc:id="375226e2-6f4c-4df8-b21a-00b314fda073" config-ref="Database_Config_Store">
+            <db:sql><![CDATA[UPDATE ORDERED_PRODUCT SET NumProductOrdered = (:NUM) WHERE IDproduct = :ID AND IDorder = :ORDER;]]></db:sql>
+            <db:input-parameters><![CDATA[#[{'NUM' : vars.NewNumber, 'ID': vars.IDproduct , 'ORDER': vars.IDorder }]]]></db:input-parameters>
+        </db:update>
+        <db:update doc:name="Update Price" doc:id="71259550-83eb-4e93-ad71-8c3ff92252cf" config-ref="Database_Config_Store">
+            <db:sql><![CDATA[UPDATE ORDERED_PRODUCT SET OrderedPrice = (:PRICE), PriceWithPromo = (:PRICE) WHERE IDproduct = :ID AND IDorder = :ORDER;]]></db:sql>
+            <db:input-parameters><![CDATA[#[{'PRICE' : vars.NewPrice, 'ID': vars.IDproduct , 'ORDER': vars.IDorder }]]]></db:input-parameters>
+        </db:update>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  message: "Product updated"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="put:\items\(product_id)\plus:application\json:s-nd-databaseaccess-openbanking-config">
+        <db:update doc:name="Update" doc:id="62814b7c-c281-418b-87da-7487bd6de1d2" config-ref="Database_Config_Store">
+            <db:sql><![CDATA[UPDATE ITEM SET ItemQuantity = :NUM WHERE IDproduct = :ID AND IDstore = :STORE;]]></db:sql>
+            <db:input-parameters><![CDATA[#[{'ID':attributes.uriParams.product_id, 'NUM':payload.ItemQuantity, 'STORE':payload.IDstore}]]]></db:input-parameters>
+        </db:update>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  Message: "Items restocked"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="put:\orderedProducts\promo:application\json:s-nd-databaseaccess-openbanking-config">
+        <db:update doc:name="Update" doc:id="79cccaa0-314b-44e1-8442-fead6cb44848" config-ref="Database_Config_Store">
+            <db:sql><![CDATA[UPDATE ORDERED_PRODUCT SET PriceWithPromo = :PRICE WHERE ORDERED_PRODUCT.IDorder =:ID and ORDERED_PRODUCT.IDproduct = :PRODUCT ;]]></db:sql>
+            <db:input-parameters><![CDATA[#[{'ID':payload.IDorder, 'PRODUCT':payload.IDproduct, 'PRICE':payload.NewPromoPrice}]]]></db:input-parameters>
+        </db:update>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  Message: "Price updated"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="delete:\orderedProducts:application\json:s-nd-databaseaccess-openbanking-config">
+        <db:delete doc:name="Delete" doc:id="461535d0-b808-4620-af6f-fd2b078a0bc5" config-ref="Database_Config_Store">
+            <db:sql><![CDATA[DELETE FROM ORDERED_PRODUCT WHERE IDproduct = :PROD and IDorder = :ID;]]></db:sql>
+            <db:input-parameters><![CDATA[#[{'ID':payload.IDorder, 'PROD':payload.IDproduct}]]]></db:input-parameters>
+        </db:delete>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  message: "Product deleted from the order"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\bank\(bank_id):s-nd-databaseaccess-openbanking-config">
+        <db:select doc:name="Select * From BANK" doc:id="50e5b4f4-f08a-445d-96e6-2afae36d6fb3" config-ref="Database_Config_Store">
+            <db:sql><![CDATA[SELECT * FROM BANK WHERE IDbank = :ID]]></db:sql>
+            <db:input-parameters><![CDATA[#[{'ID': attributes.uriParams.bank_id}]]]></db:input-parameters>
+        </db:select>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd" doc:name="payload">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\barcodes\(barcode_id):s-nd-databaseaccess-openbanking-config">
+        <db:select doc:name="Select * From BARCODE" doc:id="039d892e-5c0d-4c9f-8cff-e5d769e3e4a6" config-ref="Database_Config_Store">
+            <db:sql><![CDATA[SELECT * FROM BARCODE WHERE BarcodeFullCode = :ID]]></db:sql>
+            <db:input-parameters><![CDATA[#[{'ID' : attributes.uriParams.barcode_id}]]]></db:input-parameters>
+        </db:select>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd" doc:name="payload">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\cashback\(bank_id):s-nd-databaseaccess-openbanking-config">
+        <db:select doc:name="Select * From Cashback" doc:id="6afd5725-9eb2-4a93-a298-44968445c02e" config-ref="Database_Config_Store">
+            <db:sql><![CDATA[SELECT * FROM CASHBACK WHERE IDbank = :ID AND StoreBrand = :STORE]]></db:sql>
+            <db:input-parameters><![CDATA[#[{'ID' : attributes.uriParams.bank_id, 'STORE': attributes.queryParams.storeBrand}]]]></db:input-parameters>
+        </db:select>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd" doc:name="payload">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\clients\(client_id):s-nd-databaseaccess-openbanking-config">
+        <db:select doc:name="Select * From USER" doc:id="297e1d17-766f-4a45-a623-7256e9fe2661" config-ref="Database_Config_Store">
+            <db:sql><![CDATA[SELECT * FROM USER WHERE IDuser = :ID]]></db:sql>
+            <db:input-parameters><![CDATA[#[{'ID': attributes.uriParams.client_id}]]]></db:input-parameters>
+        </db:select>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd" doc:name="payload">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\orders\(order_id)\dated:s-nd-databaseaccess-openbanking-config">
+        <db:select doc:name="Select * From ORDERS" doc:id="84b92542-4abe-4d70-92ba-3e14fca3201a" config-ref="Database_Config_Store">
+            <db:sql><![CDATA[SELECT * FROM ORDERS where OrderIDuser = :ID]]></db:sql>
+            <db:input-parameters><![CDATA[#[{'ID' : attributes.uriParams.order_id}]]]></db:input-parameters>
+        </db:select>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd" doc:name="payload">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\fidelities\(client_id):s-nd-databaseaccess-openbanking-config">
+        <db:select doc:name="Select * From FIDELITY" doc:id="ea0374ea-dcc7-4032-a377-8e99d85d8054" config-ref="Database_Config_Store">
+            <db:sql><![CDATA[SELECT * FROM FIDELITY WHERE IDuser = :ID and StoreBrand = :STORE;]]></db:sql>
+            <db:input-parameters><![CDATA[#[{'ID':attributes.uriParams.client_id, 'STORE' : attributes.queryParams.StoreBrand}]]]></db:input-parameters>
+        </db:select>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd" doc:name="payload">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\items\(product_id):s-nd-databaseaccess-openbanking-config">
+        <db:select doc:name="Select * From ITEM" doc:id="d64ab0ea-cf19-4cd3-bdbb-16f02e7df2b0" config-ref="Database_Config_Store">
+            <db:sql><![CDATA[SELECT * FROM ITEM WHERE IDproduct = :ID AND IDstore = :STORE]]></db:sql>
+            <db:input-parameters><![CDATA[#[{'ID':attributes.uriParams.product_id, 'STORE':attributes.queryParams.store_id}]]]></db:input-parameters>
+        </db:select>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd" doc:name="payload">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\orders\(order_id):s-nd-databaseaccess-openbanking-config">
+        <db:select doc:name="Select * FROM ORDERS" doc:id="3c4ee989-e6cb-436b-a786-66447bcc9b20" config-ref="Database_Config_Store">
+            <db:sql><![CDATA[SELECT * FROM ORDERS WHERE IDorder = :ID;]]></db:sql>
+            <db:input-parameters><![CDATA[#[{'ID':attributes.uriParams.order_id}]]]></db:input-parameters>
+        </db:select>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd" doc:name="payload">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\promos\(product_id):s-nd-databaseaccess-openbanking-config">
+        <db:select doc:name="Select * FROM PROMOS" doc:id="f0c42927-f987-4c78-856f-c62a24e0fb8e" config-ref="Database_Config_Store">
+            <db:sql><![CDATA[SELECT * FROM PROMO WHERE IDproductAssociated = :ID	and IDstore = :STORE]]></db:sql>
+            <db:input-parameters><![CDATA[#[{'ID':attributes.uriParams.product_id, 'STORE': attributes.queryParams.store_id}]]]></db:input-parameters>
+        </db:select>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd" doc:name="payload">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\stores\(store_id):s-nd-databaseaccess-openbanking-config">
+        <db:select doc:name="Select" doc:id="ce2c79b4-d2f1-4d7e-90f4-37fb04d128a6" config-ref="Database_Config_Store">
+            <db:sql><![CDATA[SELECT * FROM STORE where IDstore = :ID]]></db:sql>
+            <db:input-parameters><![CDATA[#[{'ID':attributes.uriParams.store_id}]]]></db:input-parameters>
+        </db:select>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd" doc:name="payload">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\stores_barcode\(qr_code_store):s-nd-databaseaccess-openbanking-config">
+        <db:select doc:name="Select * FROM QRcode_Store" doc:id="0797e472-2979-4e77-9506-97d5695081ec" config-ref="Database_Config_Store">
+            <db:sql><![CDATA[SELECT * FROM QRCODE_STORE WHERE StoreQRcode = :ID]]></db:sql>
+            <db:input-parameters><![CDATA[#[{'ID': attributes.uriParams.qr_code_store}]]]></db:input-parameters>
+        </db:select>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd" doc:name="payload">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\test:s-nd-databaseaccess-openbanking-config">
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd" doc:name="test message">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  message: "API OK"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\products_with_barcode\(barcode_id):s-nd-databaseaccess-openbanking-config">
+        <db:select doc:name="Select" doc:id="8cad91c6-2254-4804-a4a4-ec569f47f276" config-ref="Database_Config_Store">
+            <db:sql><![CDATA[SELECT * FROM PRODUCT WHERE IDproduct = (SELECT IdProductAssociated FROM BARCODE WHERE BarcodeFullCode = :BARCODE)]]></db:sql>
+            <db:input-parameters><![CDATA[#[{'BARCODE' : attributes.uriParams.barcode_id}]]]></db:input-parameters>
+        </db:select>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd" doc:name="payload">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\orderedProducts\(order_id):s-nd-databaseaccess-openbanking-config">
+        <db:select doc:name="Select * FROM OrderedProduct" doc:id="540138a5-dd21-4d09-b51f-176526936097" config-ref="Database_Config_Store">
+            <db:sql><![CDATA[SELECT * FROM ORDERED_PRODUCT WHERE IDorder = :ID AND IDproduct = :PROD]]></db:sql>
+            <db:input-parameters><![CDATA[#[{'ID':attributes.uriParams.order_id, 'PROD':attributes.queryParams.product_id}]]]></db:input-parameters>
+        </db:select>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd" doc:name="payload">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\products\(product_id):s-nd-databaseaccess-openbanking-config">
+        <db:select doc:name="Select * From PRODUCT" doc:id="7f78307a-0e65-4ec7-a554-0c3a5eefadd5" config-ref="Database_Config_Store">
+            <db:sql><![CDATA[SELECT * FROM PRODUCT WHERE IDproduct = :ID]]></db:sql>
+            <db:input-parameters><![CDATA[#[{'ID':attributes.uriParams.product_id}]]]></db:input-parameters>
+        </db:select>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd" doc:name="payload">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="post:\orderedProducts\new\(order_id):application\json:s-nd-databaseaccess-openbanking-config">
+        <db:insert doc:name="Insert Into OrderedProduct" doc:id="becd8c07-0a43-4b92-a5ac-44d8df09d4eb" config-ref="Database_Config_Store">
+            <db:sql><![CDATA[INSERT INTO ORDERED_PRODUCT (IDproduct, IDorder, NumProductOrdered, OrderedPrice, PriceWithPromo) VALUE (:PRODUCT, :ORDER, :NUM, :PRICE, :PROMOPRICE)]]></db:sql>
+            <db:input-parameters><![CDATA[#[{'PRODUCT':payload.IDproduct, 'ORDER':attributes.uriParams.order_id, 'NUM':payload.NumProductOrdered, 'PRICE':payload.OrderedPrice, 'PROMOPRICE':payload.PriceWithPromo}]]]></db:input-parameters>
+        </db:insert>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd" doc:name="Product added">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  Message: "Product added to the order"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="post:\new_orders\(order_id):application\json:s-nd-databaseaccess-openbanking-config">
+        <set-variable value="#[payload]" doc:name="Set Variable" doc:id="c6fe0c28-74a2-4669-abd6-7dae62f6832e" variableName="new_order" />
+        <db:insert doc:name="Insert" doc:id="d5e7d8e2-bcfc-44de-b5fe-feea0a14540b" config-ref="Database_Config_Store">
+            <db:sql><![CDATA[INSERT INTO ORDERS ( IDorder,OrderTotalPrice, OrderDate, OrderValidated,
+  OrderIDstore, OrderIDuser, OrderTotalPriceWithPromo) VALUE (:ID, 0, NOW(), 0, :STORE, :USER, 0)]]></db:sql>
+            <db:input-parameters><![CDATA[#[{'ID':vars.new_order.IDorder, 'STORE' : vars.new_order.IDstore, 'USER' : vars.new_order.IDuser, 'DATETime' : vars.new_order.orderDate}]]]></db:input-parameters>
+        </db:insert>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  Message: "New Order Created", 
+  IDorder : vars.new_order.order
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\banks\(bank_id):s-nd-databaseaccess-openbanking-config">
+        <db:select doc:name="Copy_of_Select * From BANK" doc:id="0094b3c1-203c-4343-9e68-7867ac1c71df" config-ref="Database_Config_Store">
+            <db:sql><![CDATA[SELECT * FROM BANK WHERE IDbank = :ID]]></db:sql>
+            <db:input-parameters><![CDATA[#[{'ID': attributes.uriParams.bank_id}]]]></db:input-parameters>
+        </db:select>
+        <ee:transform doc:name="Copy_of_payload" doc:id="62b2e7bc-65c3-4f01-8188-a9116434568d" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\cashbacks\(bank_id):s-nd-databaseaccess-openbanking-config">
+        <db:select doc:name="Copy_of_Select * From Cashback" doc:id="8a184143-e025-4ffc-8931-984c8f2cfc9d" config-ref="Database_Config_Store">
+            <db:sql><![CDATA[SELECT * FROM CASHBACK WHERE IDbank = :ID AND StoreBrand = :STORE]]></db:sql>
+            <db:input-parameters><![CDATA[#[{'ID' : attributes.uriParams.bank_id, 'STORE': attributes.queryParams.storeBrand}]]]></db:input-parameters>
+        </db:select>
+        <ee:transform doc:name="Copy_of_payload" doc:id="aaef5c78-54d5-45b8-a467-f2b18ba784f7" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\orderedProducts\all\(order_id):s-nd-databaseaccess-openbanking-config">
+        <db:select doc:name="Select" doc:id="6b821e14-091a-4eba-ab6a-a04051354840" config-ref="Database_Config_Store">
+            <db:sql><![CDATA[SELECT * FROM ORDERED_PRODUCT WHERE IDorder = :ID]]></db:sql>
+            <db:input-parameters><![CDATA[#[{'ID': attributes.uriParams.order_id}]]]></db:input-parameters>
+        </db:select>
+        <ee:transform xsi:schemaLocation=" http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd  http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd  http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\clients\connection\(username):s-nd-databaseaccess-openbanking-config">
+        <db:select doc:name="Select" doc:id="5d472f70-b18d-48c1-ab07-56bc8720d493" config-ref="Database_Config_Store">
+            <db:sql><![CDATA[SELECT Pwd, IDuser FROM USER WHERE EmailAddress = :MAIL]]></db:sql>
+            <db:input-parameters><![CDATA[#[{'MAIL' : attributes.uriParams.username}]]]></db:input-parameters>
+        </db:select>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="post:\clients:application\json:s-nd-databaseaccess-openbanking-config">
+        <db:insert doc:name="Insert" doc:id="02a01490-14cf-4ef8-920e-a49c9ce85825" config-ref="Database_Config_Store">
+            <db:sql><![CDATA[INSERT INTO USER (IDuser, UserFirstName, UserLastName, Birthday, IDbank, EmailAddress, StreetAddress, TownAddress, PostalCode, Country, PhoneNumber,Lgn, Pwd) VALUE (:IDuser, :UserFirstName, :UserLastName, :Birthday, :IDbank, :EmailAddress, :StreetAddress, :TownAddress, :PostalCode, :Country, :PhoneNumber,:Lgn, :Pwd);]]></db:sql>
+            <db:input-parameters><![CDATA[#[{
+	'IDuser' : payload.IDuser, 
+	'UserFirstName' : payload.UserFirstName, 
+	'UserLastName' : payload.UserLastName, 
+	'Birthday' : payload.Birthday , 
+	'IDbank' : payload.IDbank, 
+	'EmailAddress' : payload.EmailAddress, 
+	'StreetAddress' : payload.StreetAddress, 
+	'TownAddress' : payload.TownAddress, 
+	'PostalCode' : payload.PostalCode, 
+	'Country' : payload.Country, 
+	'PhoneNumber' : payload.PhoneNumber,
+	'Lgn' : payload.Lgn, 
+	'Pwd' : payload.Pwd
+}]]]></db:input-parameters>
+        </db:insert>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  IDuser: 1,
+  UserFirstName: "Bruce",
+  UserLastName: "Clark",
+  IDbank: 1
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="post:\orders\(order_id)\validation:application\json:s-nd-databaseaccess-openbanking-config">
+        <db:update doc:name="Update" doc:id="d07c9df3-af0b-4508-9b39-96f08ebe29eb" config-ref="Database_Config_Store">
+			<db:sql ><![CDATA[UPDATE ORDERS SET OrderValidated = 1 WHERE IDorder = :ID;]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{'ID': attributes.uriParams}]]]></db:input-parameters>
+		</db:update>
+		<ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  IDorder: 1,
+  OrderTotalPrice: 6.2,
+  OrderTotalPriceWithPromo: 4.8,
+  OrderDate: "01/04/2021",
+  OrderValidated: 1,
+  OrderIDstore: 1,
+  OrderIDuser: 1
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+</mule>
